@@ -1,0 +1,14 @@
+DROP TABLE IF EXISTS stock_prices;
+CREATE TABLE stock_prices(
+  day DATE,
+  open FLOAT,
+  high FLOAT,
+  low FLOAT,
+  close FLOAT,
+  volume INT,
+  adj_close FLOAT
+)
+PARTITIONED BY (name STRING)
+CLUSTERED BY (day) into 5 buckets
+STORED AS ORC
+TBLPROPERTIES ("orc.compress"="SNAPPY");
