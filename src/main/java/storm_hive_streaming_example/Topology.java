@@ -42,7 +42,11 @@ public class Topology {
     public static final String HIVE_BOLT_ID = "hive-stock-price-bolt";
 
     public static void main(String... args) {
-
+        Topology app = new Topology();
+        app.run(args);
+    }
+    
+    public void run(String... args){
         String kafkaTopic = "stock_topic";
 
         SpoutConfig spoutConfig = new SpoutConfig(new ZkHosts("127.0.0.1"),
@@ -53,7 +57,7 @@ public class Topology {
         KafkaSpout kafkaSpout = new KafkaSpout(spoutConfig);
         
         // Hive connection configuration
-        String metaStoreURI = "thrift://sandbox.hortonworks.com:9083";
+        String metaStoreURI = "thrift://one.hdp:9083";
         String dbName = "default";
         String tblName = "stock_prices";
         // Fields for possible partition
@@ -69,7 +73,8 @@ public class Topology {
         hiveOptions = new HiveOptions(metaStoreURI, dbName, tblName, mapper)
                 .withTxnsPerBatch(2)
                 .withBatchSize(100)
-                .withIdleTimeout(10);
+                .withIdleTimeout(10)
+                .withCallTimeout(10000000);
                 //.withKerberosKeytab(path_to_keytab)
                 //.withKerberosPrincipal(krb_principal);
 
@@ -90,7 +95,7 @@ public class Topology {
         }
     }
 
-    public static class StockDataBolt extends BaseBasicBolt {
+    public class StockDataBolt extends BaseBasicBolt {
         
         private DateFormat df = new SimpleDateFormat ("yyyy-MM-dd");
         
