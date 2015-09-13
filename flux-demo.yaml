@@ -1,0 +1,88 @@
+name: "flux-hive-streaming-example"
+config:
+  topology.workers: 2
+  
+components:
+    
+  - id: "zkHosts"
+    className: "storm.kafka.ZkHosts"
+    constructorArgs:
+      - "127.0.0.1:2181"
+
+  - id: "stockSpoutConfig"
+    className: "storm.kafka.SpoutConfig"
+    constructorArgs:
+      - ref: "zkHosts"  # brokerHosts
+      - "stock_topic"   # topic
+      - "/kafka_storm"  # zkRoot
+      - "StormSpout"    # id
+
+  - id: "stockPartitionFields"
+    className: "backtype.storm.tuple.Fields"
+    constructorArgs:
+      - ["name"]
+      
+  - id: "stockColumnFields"
+    className: "backtype.storm.tuple.Fields"
+    constructorArgs:
+      - ["day", "open", "high", "low", "close", "volume","adj_close"]
+
+  - id: "stockDelimitedRecordHiveMapper"
+    className: "org.apache.storm.hive.bolt.mapper.DelimitedRecordHiveMapper"
+    configMethods:
+      - name: "withPartitionFields"
+        args:
+          - ref: "stockPartitionFields"
+      - name: "withColumnFields"
+        args:
+          - ref: "stockColumnFields"
+
+  - id: "stockHiveOptions"
+    className: "org.apache.storm.hive.common.HiveOptions"
+    constructorArgs:
+      - "thrift://one.hdp:9083"                # metaStoreURI
+      - "default"                                # databaseName
+      - "stock_prices"                           # tableName
+      - ref: "stockDelimitedRecordHiveMapper"   # HiveMapper
+    configMethods:
+      - name: "withTxnsPerBatch"
+        args:
+          - 2
+      - name: "withBatchSize"
+        args:
+          - 100
+      - name: "withIdleTimeout"
+        args:
+          - 10
+
+# spout definitions
+spouts:
+  - id: "stockSpout"
+    className: "storm.kafka.KafkaSpout"
+    parallelism: 1
+    constructorArgs:
+      - ref: "stockSpoutConfig"
+
+# bolt definitions
+bolts:
+  - id: "stockDataBolt"
+    className: "storm_hive_streaming_example.StockDataBolt"
+    
+  - id: "stockHiveBolt"
+    className: "org.apache.storm.hive.bolt.HiveBolt"
+    constructorArgs:
+      - ref: "stockHiveOptions"
+
+#stream definitions
+streams:
+  - name: "stockSpout --> sotckDataBolt" # name isn't used (placeholder for logging, UI, etc.)
+    from: "stockSpout"
+    to: "stockDataBolt"
+    grouping:
+      type: SHUFFLE
+      
+  - name: "stockDataBolt --> stockHiveBolt" # name not used
+    from: "stockDataBolt"
+    to: "stockHiveBolt"
+    grouping:
+      type: SHUFFLE
