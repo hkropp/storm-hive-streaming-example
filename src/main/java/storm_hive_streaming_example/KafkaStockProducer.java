@@ -24,7 +24,7 @@ public class KafkaStockProducer {
         // Kafka Properties
         Properties props = new Properties();
         // HDP uses 6667 as the broker port. Sometimes the binding is not resolved as expected, therefor this list.
-        props.put("metadata.broker.list", "10.0.2.15:6667,127.0.0.1:6667,sandbox.hortonworks.com:6667");
+        props.put("metadata.broker.list", "127.0.0.1:6667,one.hdp:6667");
         props.put("serializer.class", "kafka.serializer.StringEncoder");
         props.put("request.required.acks", "1");
         
