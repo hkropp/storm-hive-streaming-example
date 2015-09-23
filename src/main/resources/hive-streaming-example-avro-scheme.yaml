@@ -1,0 +1,90 @@
+name: "hive-streaming-example-avro-scheme"
+config:
+  topology.workers: 1
+  
+components:
+    
+  - id: "zkHosts"
+    className: "storm.kafka.ZkHosts"
+    constructorArgs:
+      - "${hive-streaming-example.zk.hosts}"
+
+  - id: "stockSpoutConfig"
+    className: "storm.kafka.SpoutConfig"
+    constructorArgs:
+      - ref: "zkHosts"                            # brokerHosts
+      - "${hive-streaming-example.kafka.topic}"   # topic
+      - "${hive-streaming-example.kafka.zkRoot}"  # zkRoot
+      - "${hive-streaming-example.kafka.spoutId}" # id
+
+  - id: "stockPartitionFields"
+    className: "backtype.storm.tuple.Fields"
+    constructorArgs:
+      - ["name"]
+      
+  - id: "stockColumnFields"
+    className: "backtype.storm.tuple.Fields"
+    constructorArgs:
+      - ["day", "open", "high", "low", "close", "volume","adj_close"]
+
+  - id: "stockDelimitedRecordHiveMapper"
+    className: "org.apache.storm.hive.bolt.mapper.DelimitedRecordHiveMapper"
+    configMethods:
+      - name: "withPartitionFields"
+        args:
+          - ref: "stockPartitionFields"
+      - name: "withColumnFields"
+        args:
+          - ref: "stockColumnFields"
+
+  - id: "stockHiveOptions"
+    className: "org.apache.storm.hive.common.HiveOptions"
+    constructorArgs:
+      - "${hive-streaming-example.hive.metaStoreURI}"   # metaStoreURI
+      - "${hive-streaming-example.hive.databaseName}"   # databaseName
+      - "${hive-streaming-exmaple.hive.tableName}"      # tableName
+      - ref: "stockDelimitedRecordHiveMapper"           # HiveMapper
+    configMethods:
+      - name: "withTxnsPerBatch"
+        args:
+          - 2
+      - name: "withBatchSize"
+        args:
+          - 100
+      - name: "withIdleTimeout"
+        args:
+          - 10
+
+# spout definitions
+spouts:
+  - id: "stockSpout"
+    className: "storm.kafka.KafkaSpout"
+    parallelism: 1
+    constructorArgs:
+      - ref: "stockSpoutConfig"
+
+# bolt definitions
+bolts:
+  - id: "stockDataBolt"
+    className: "storm_hive_streaming_example.StockDataBolt"
+    parallelism: 1
+    
+  - id: "stockHiveBolt"
+    className: "org.apache.storm.hive.bolt.HiveBolt"
+    parallelism: 1
+    constructorArgs:
+      - ref: "stockHiveOptions"
+
+#stream definitions
+streams:
+  - name: "stockSpout --> sotckDataBolt" # name isn't used (placeholder for logging, UI, etc.)
+    from: "stockSpout"
+    to: "stockDataBolt"
+    grouping:
+      type: SHUFFLE
+      
+  - name: "stockDataBolt --> stockHiveBolt" # name not used
+    from: "stockDataBolt"
+    to: "stockHiveBolt"
+    grouping:
+      type: SHUFFLE

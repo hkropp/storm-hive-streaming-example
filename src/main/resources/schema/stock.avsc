@@ -1,0 +1,17 @@
+{
+	"namespace":"storm_hive_streaming_example.model",
+    "type":"record",
+    "name":"Stock",
+    "fields" : [
+    	{"name":"Date", "type":"string" },
+        {"name":"Open", "type":"float" },
+		{"name":"High", "type":"float" },
+		{"name":"Low", "type":"float" },
+		{"name":"Close", "type":"float" },
+		{"name":"Volume", "type":"int" },
+		{"name":"AdjClose", "type":"float" },
+		{"name":"Name", "type":"string" },
+		{"name":"ZGID", "type":"int" },
+		{"name":"ZGUGID", "type":"int" }
+	]
+}

@@ -95,30 +95,4 @@ public class Topology {
         }
     }
 
-    public class StockDataBolt extends BaseBasicBolt {
-        
-        private DateFormat df = new SimpleDateFormat ("yyyy-MM-dd");
-        
-        @Override
-        public void declareOutputFields(OutputFieldsDeclarer ofDeclarer) {
-            ofDeclarer.declare(new Fields("day","open","high","low","close","volume","adj_close","name"));
-        }
-
-        @Override
-        public void execute(Tuple tuple, BasicOutputCollector outputCollector) {
-            Fields fields = tuple.getFields();
-            try {
-                String stockDataStr = new String((byte[]) tuple.getValueByField(fields.get(0)), "UTF-8");
-                String[] stockData = stockDataStr.split(",");
-                Values values = new Values(df.parse(stockData[0]), Float.parseFloat(stockData[1]),
-                        Float.parseFloat(stockData[2]),Float.parseFloat(stockData[3]),
-                        Float.parseFloat(stockData[4]),Integer.parseInt(stockData[5]), 
-                        Float.parseFloat(stockData[6]),stockData[7]);
-                outputCollector.emit(values);
-            } catch (UnsupportedEncodingException | ParseException ex) {
-                Logger.getLogger(Topology.class.getName()).log(Level.SEVERE, null, ex);
-                throw new FailedException(ex.toString());
-            }      
-        }
-    }
 }
