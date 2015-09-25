@@ -42,7 +42,7 @@ public class StockAvroSerializer extends Serializer<Stock> {
     }
 
     public Stock read(Kryo kryo, Input input, Class<Stock> type) {
-        byte[] value = new byte[input.readInt(true)];
+        byte[] value = input.getBuffer();
         SpecificDatumReader<Stock> reader = new SpecificDatumReader<>(SCHEMA);
         Stock record = null;
         try {

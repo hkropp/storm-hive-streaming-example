@@ -20,3 +20,5 @@ hs_err_pid*
 
 # notes
 notes
+
+src/main/java/storm_hive_streaming_example/model/

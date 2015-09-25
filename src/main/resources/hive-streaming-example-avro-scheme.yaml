@@ -1,14 +1,30 @@
-name: "hive-streaming-example-avro-scheme"
+name: "hive-streaming-example-avro"
 config:
   topology.workers: 1
+  # decorator being used for the spout to register the StockAvroSerializer.class with Kryo
+  topology.kryo.decorators:
+    - "storm_hive_streaming_example.serializer.StockAvroKryoDecorator"
+  # define serializers being used by tuples de-/serializing values. See http://storm.apache.org/documentation/Serialization.html
+  topology.kryo.register:
+    - storm_hive_streaming_example.model.Stock: storm_hive_streaming_example.serializer.StockAvroSerializer
   
 components:
-    
+  # defines a scheme for the spout to emit a Stock.class object
+  - id: "stockAvroScheme"
+    className: "storm_hive_streaming_example.serializer.StockAvroScheme"
+
+  # adding the defined stock scheme to the multi-scheme that can be assigned to the spout
+  - id: "stockMultiScheme"
+    className: "backtype.storm.spout.SchemeAsMultiScheme"
+    constructorArgs:
+      - ref: "stockAvroScheme"
+
   - id: "zkHosts"
     className: "storm.kafka.ZkHosts"
     constructorArgs:
       - "${hive-streaming-example.zk.hosts}"
 
+  # configuring the spout to read bytes from Kafka and emit Stock.class
   - id: "stockSpoutConfig"
     className: "storm.kafka.SpoutConfig"
     constructorArgs:
@@ -16,12 +32,17 @@ components:
       - "${hive-streaming-example.kafka.topic}"   # topic
       - "${hive-streaming-example.kafka.zkRoot}"  # zkRoot
       - "${hive-streaming-example.kafka.spoutId}" # id
+    properties:
+      - name: "scheme"
+        ref: "stockMultiScheme"                   # use the stock scheme previously defined
 
+  # partition field used for storing stocks in Hive
   - id: "stockPartitionFields"
     className: "backtype.storm.tuple.Fields"
     constructorArgs:
       - ["name"]
-      
+
+  # column fields of the Hive table, should match names of tuple fields
   - id: "stockColumnFields"
     className: "backtype.storm.tuple.Fields"
     constructorArgs:
@@ -44,14 +65,15 @@ components:
       - "${hive-streaming-example.hive.databaseName}"   # databaseName
       - "${hive-streaming-exmaple.hive.tableName}"      # tableName
       - ref: "stockDelimitedRecordHiveMapper"           # HiveMapper
+    # writes in batches of transactions -> [ batch: [(INSERT), (INSERT), ...], batch: ... ]]
     configMethods:
-      - name: "withTxnsPerBatch"
+      - name: "withTxnsPerBatch" # how many transactions per batch
         args:
           - 2
       - name: "withBatchSize"
         args:
           - 100
-      - name: "withIdleTimeout"
+      - name: "withIdleTimeout" # flush out in that time interval
         args:
           - 10
 
@@ -65,8 +87,12 @@ spouts:
 
 # bolt definitions
 bolts:
-  - id: "stockDataBolt"
-    className: "storm_hive_streaming_example.StockDataBolt"
+  - id: "avroStockDataBolt"
+    className: "storm_hive_streaming_example.AvroStockDataBolt"
+    parallelism: 1
+
+  - id: "fieldEmitBolt"
+    className: "storm_hive_streaming_example.FieldEmitBolt"
     parallelism: 1
     
   - id: "stockHiveBolt"
@@ -77,14 +103,20 @@ bolts:
 
 #stream definitions
 streams:
-  - name: "stockSpout --> sotckDataBolt" # name isn't used (placeholder for logging, UI, etc.)
+  - name: "stockSpout --> avroStockDataBolt" # name isn't used (placeholder for logging, UI, etc.)
     from: "stockSpout"
-    to: "stockDataBolt"
+    to: "avroStockDataBolt"
     grouping:
       type: SHUFFLE
       
-  - name: "stockDataBolt --> stockHiveBolt" # name not used
-    from: "stockDataBolt"
+  - name: "avroStockDataBolt --> fieldEmitBolt" # name not used
+    from: "avroStockDataBolt"
+    to: "fieldEmitBolt"
+    grouping:
+      type: SHUFFLE
+
+  - name: "fieldEmitBolt --> stockHiveBolt" # name not used
+    from: "fieldEmitBolt"
     to: "stockHiveBolt"
     grouping:
       type: SHUFFLE

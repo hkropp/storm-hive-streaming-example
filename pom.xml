@@ -14,6 +14,7 @@
         <flux.version>0.3.0</flux.version>
         <kafka_2.10.version>0.8.2.2.3.0.0-2557</kafka_2.10.version>
         <avro.version>1.7.7</avro.version>
+        <junit.version>4.11</junit.version>
     </properties>
     
     <build>
@@ -89,6 +90,12 @@
     </repositories>
     
     <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.apache.storm</groupId>
             <artifactId>storm-kafka</artifactId>
