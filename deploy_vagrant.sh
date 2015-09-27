@@ -9,7 +9,7 @@ scp $vagrant_ssh_port $vagrant_ssh_key target/storm-hive-streaming-example-1.0-S
 
 scp $vagrant_ssh_port $vagrant_ssh_key src/main/resources/flux-demo.yaml vagrant@localhost:
 scp $vagrant_ssh_port $vagrant_ssh_key src/main/resources/hive-streaming-example.yaml vagrant@localhost:
-scp $vagrant_ssh_port $vagrant_ssh_key src/main/resources/hive-streaming-example-avro.yaml vagrant@localhost:
+scp $vagrant_ssh_port $vagrant_ssh_key src/main/resources/hive-streaming-example-avro-scheme.yaml vagrant@localhost:
 scp $vagrant_ssh_port $vagrant_ssh_key src/main/resources/one_hdp-topology.properties vagrant@localhost:
 scp $vagrant_ssh_port $vagrant_ssh_key src/main/resources/hive.schema vagrant@localhost:
 scp $vagrant_ssh_port $vagrant_ssh_key src/main/resources/create_kafka_topic.sh vagrant@localhost:

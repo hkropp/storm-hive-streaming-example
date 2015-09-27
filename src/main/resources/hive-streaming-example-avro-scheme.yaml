@@ -1,4 +1,4 @@
-name: "hive-streaming-example-avro"
+name: "hive-streaming-example-avro-scheme"
 config:
   topology.workers: 1
   # decorator being used for the spout to register the StockAvroSerializer.class with Kryo
